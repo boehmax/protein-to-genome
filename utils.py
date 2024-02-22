@@ -1,6 +1,8 @@
 import subprocess
 import os
 from Bio import Entrez
+import pandas as pd
+from io import StringIO
 
 def retrieve_protein_info(filename):
     """
@@ -12,40 +14,35 @@ def retrieve_protein_info(filename):
             output_file = f'ipg/{protein_id}.txt'
             # Fetch IPG file using Entrez
             handle = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="text")
-            ipg_data = handle.read()  # Read the response data
-            with open(output_file, 'w') as ipg_file:
-                ipg_file.write(ipg_data.decode())  # Write the decoded data to the file
+            ipg_data = StringIO(handle.read())  # Read the response data
+            ipg_data_df = pd.read_csv(ipg_data, sep="\t")
+            ipg_data_df.to_csv(output_file, index=False, header=False)  # Write the decoded data to the file
 
 def create_summary_file():
     """
     Create a summary file containing the second line of each IPG file.
     """
-    summary_lines = []
+    summary_data = []
     for filename in os.listdir('ipg/'):
         with open(os.path.join('ipg/', filename), 'r') as file:
-            second_line = file.readlines()[1]
-            summary_lines.append(second_line)
-    with open('ipg_summary.txt', 'w') as summary_file:
-        summary_file.write('\n'.join(summary_lines))
-
+            lines = file.readlines()
+            second_line_values = lines[1].strip().split('\t')  # Assuming tab-separated values
+            summary_data.append(second_line_values)
+    summary_df = pd.DataFrame(summary_data)
+    summary_df.columns = ['Id',	'Source', 'Nucleotide Accession', 'Start', 'Stop', 'Strand', 'Protein', 'Protein Name','Organism','Strain','Assembly']
+    summary_df.to_csv('ipg_summary.csv', index=False, header=False)
+ 
 def process_summary_file():
     """
     Process the summary file to extract relevant information.
     """
-    with open('ipg_summary.txt', 'r') as summary_file:
-        lines = summary_file.readlines()
-        accs_protein = []
-        accs = []
-        for line in lines:
-            parts = line.split()
-            acc = parts[-1]
-            accs_protein.append(f'{acc} {parts[6]}')
-            if acc.startswith('GC'):
-                accs.append(acc)
-        with open('assm_accs_protein.txt', 'w') as accs_protein_file:
-            accs_protein_file.write('\n'.join(accs_protein))
-        with open('assm_accs.txt', 'w') as accs_file:
-            accs_file.write('\n'.join(accs))
+    summary_df = pd.read_csv('ipg_summary.csv') 
+    accs_protein = summary_df[["Assembly", "Protein"]]
+    accs_protein.columns = ['Accession', 'Protein']
+    accs_protein.to_csv('assm_accs_protein.csv', index=False)
+
+    accs = accs_protein['Accession']
+    accs[accs.str.startswith('GC')].to_csv('assm_accs.csv', index=False)
 
 def extend_ipg_files_with_assembly_length():
     """
@@ -69,7 +66,6 @@ def fetch_assembly_lengths(accs):
     Fetch assembly lengths for a list of assembly accessions.
     """
     assembly_lengths = {}
-    Entrez.email = "your_email@example.com"  # Enter your email here
     for acc in accs:
         handle = Entrez.efetch(db="assembly", id=acc, rettype="docsum", retmode="xml")
         record = Entrez.read(handle)
