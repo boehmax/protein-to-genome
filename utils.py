@@ -14,9 +14,10 @@ def retrieve_protein_info(filename):
             output_file = f'ipg/{protein_id}.txt'
             # Fetch IPG file using Entrez
             handle = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="text")
-            ipg_data = StringIO(handle.read())  # Read the response data
+            ipg_data = StringIO(handle.read().decode())  # Read the response data
             ipg_data_df = pd.read_csv(ipg_data, sep="\t")
-            ipg_data_df.to_csv(output_file, index=False, header=False)  # Write the decoded data to the file
+            with open(output_file, 'w') as ipg_file:
+                ipg_data_df.to_csv(output_file, index=False, header=False)  # Write the decoded data to the file
 
 def create_summary_file():
     """
