@@ -8,6 +8,7 @@ def main():
     # Define the input file containing protein IDs
     filename = "input/example_proteins.txt"
     Entrez.email = 'maximilian.bohm@kemi.uu.se' 
+    Entrez.api_key = input("Your API Key: ")
     # Step 1: Retrieve IPG files for each protein ID
     retrieve_protein_info(filename)
     

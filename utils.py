@@ -14,13 +14,14 @@ def ipg_xml_to_dataframe(ipg_xml):
     for protein in protein_list:
         # Each protein has a CDSList which is a list of StringElement objects
         # We convert each StringElement to a dictionary and add it to our list
-        for string_element in protein['CDSList']:
+        for string_element in protein['attriubutes']:
             # Convert the StringElement to a dictionary
             dict_element = vars(string_element)
             # Pop out atributes filed
-            protein_attributes = dict_element.pop('attributes')
+            #protein_attributes = dict_element.pop('attributes')
             # Add the dictionary to our list
-            cds_data.append(protein_attributes)
+            #cds_data.append(protein_attributes)
+            cds_data.append(dict_element)
 
     # Convert the list of dictionaries to a DataFrame
     df = pd.DataFrame(cds_data)
@@ -34,7 +35,7 @@ def retrieve_protein_info(filename):
     with open(filename, 'r') as file:
         for line in file:
             protein_id = line.strip()
-            output_file = f'ipg/{protein_id}.txt'
+            output_file = f'ipg/{protein_id}.csv'
             # Fetch IPG file using Entrez
             stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
             record = Entrez.read(stream)   # Read the response data
@@ -50,8 +51,8 @@ def create_summary_file():
     summary_data = []
     for filename in os.listdir('ipg/'):
         with open(os.path.join('ipg/', filename), 'r') as file:
-            reader = csv.reader(f)
-            row1 = next(reader)
+            reader = pd.read_csv(f)
+            row1 = reader[0] 
             summary_data.append(row1)
     summary_df = pd.DataFrame(summary_data)
     summary_df.columns = ['Id',	'Source', 'Nucleotide Accession', 'Start', 'Stop', 'Strand', 'Protein', 'Protein Name','Organism','Strain','Assembly']
