@@ -1,0 +1,1 @@
+NZ_LOHE01000037.1,249682,251571,+,1766203,Abyssisolibacter fermentans,2,Bacteria,MCWD3,GCF_001559865.1
