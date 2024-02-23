@@ -4,6 +4,29 @@ from Bio import Entrez
 import pandas as pd
 from io import StringIO
 
+def ipg_xml_to_dataframe(ipg_xml):
+    """
+    Takes IPG output XML to make a dataframe of the results
+    """
+    protein_list = ipg_xml['IPGReport']['ProteinList']
+    cds_data = []
+    # Iterate over each protein in the protein list
+    for protein in protein_list:
+        # Each protein has a CDSList which is a list of StringElement objects
+        # We convert each StringElement to a dictionary and add it to our list
+        for string_element in protein['CDSList']:
+            # Convert the StringElement to a dictionary
+            dict_element = vars(string_element)
+            # Pop out atributes filed
+            protein_attributes = dict_element.pop('attributes')
+            # Add the dictionary to our list
+            cds_data.append(protein_attributes)
+
+    # Convert the list of dictionaries to a DataFrame
+    df = pd.DataFrame(cds_data)
+
+    return df
+
 def retrieve_protein_info(filename):
     """
     Retrieve IPG files for each protein ID listed in the input file.
@@ -13,11 +36,12 @@ def retrieve_protein_info(filename):
             protein_id = line.strip()
             output_file = f'ipg/{protein_id}.txt'
             # Fetch IPG file using Entrez
-            handle = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="text")
-            ipg_data = StringIO(handle.read().decode())  # Read the response data
-            ipg_data_df = pd.read_csv(ipg_data, sep="\t")
+            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
+            record = Entrez.read(stream)   # Read the response data
+            ipg_data_df = ipg_xml_to_dataframe(record)
             with open(output_file, 'w') as ipg_file:
                 ipg_data_df.to_csv(output_file, index=False, header=False)  # Write the decoded data to the file
+
 
 def create_summary_file():
     """
@@ -26,9 +50,9 @@ def create_summary_file():
     summary_data = []
     for filename in os.listdir('ipg/'):
         with open(os.path.join('ipg/', filename), 'r') as file:
-            lines = file.readlines()
-            second_line_values = lines[1].strip().split('\t')  # Assuming tab-separated values
-            summary_data.append(second_line_values)
+            reader = csv.reader(f)
+            row1 = next(reader)
+            summary_data.append(row1)
     summary_df = pd.DataFrame(summary_data)
     summary_df.columns = ['Id',	'Source', 'Nucleotide Accession', 'Start', 'Stop', 'Strand', 'Protein', 'Protein Name','Organism','Strain','Assembly']
     summary_df.to_csv('ipg_summary.csv', index=False, header=False)
@@ -45,40 +69,13 @@ def process_summary_file():
     accs = accs_protein['Accession']
     accs[accs.str.startswith('GC')].to_csv('assm_accs.csv', index=False)
 
-def extend_ipg_files_with_assembly_length():
-    """
-    Extend each IPG file with assembly length information.
-    """
-    accs = []
-    for filename in os.listdir('ipg/'):
-        accs.append(filename[:-4])  # Remove '.txt' extension
-    
-    assembly_lengths = fetch_assembly_lengths(accs)
-    
-    for acc in accs:
-        ipg_file = f'ipg/{acc}.txt'
-        if acc in assembly_lengths:
-            assembly_length = assembly_lengths[acc]
-            with open(ipg_file, 'a') as file:
-                file.write(f'\nAssembly Length: {assembly_length}\n')
-
-def fetch_assembly_lengths(accs):
-    """
-    Fetch assembly lengths for a list of assembly accessions.
-    """
-    assembly_lengths = {}
-    for acc in accs:
-        handle = Entrez.efetch(db="assembly", id=acc, rettype="docsum", retmode="xml")
-        record = Entrez.read(handle)
-        assembly_length = int(record['DocumentSummarySet']['DocumentSummary'][0]['AssemblyStats']['Length'])
-        assembly_lengths[acc] = assembly_length
-    return assembly_lengths
 
 def download_genome_data():
     """
     Download genome data based on the list of assembly accessions.
     """
-    subprocess.run(['../../ncbi/datasets', 'download', 'genome', 'accession', '--inputfile', 'assm_accs.txt', '--include', 'gff3'])
+    PATH_TO_NCBI_DATASETS = '../../ncbi/datasets'
+    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.txt', '--include', 'gff3'])
 
 def unzip_downloaded_files():
     """
