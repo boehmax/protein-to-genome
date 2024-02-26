@@ -37,7 +37,7 @@ def retrieve_protein_info(filename):
             protein_id = line.strip()
             output_file = f'ipg/{protein_id}.csv'
             # Fetch IPG file using Entrez
-            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
+            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="text")
             record = Entrez.read(stream)   # Read the response data
             ipg_data_df = ipg_xml_to_dataframe(record)
             with open(output_file, 'w') as ipg_file:
