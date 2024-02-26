@@ -48,27 +48,22 @@ def create_summary_file():
     """
     Create a summary file containing the second line of each IPG file.
     """
-    summary_data = []
+    summary_data = pd.DataFrame()
     for filename in os.listdir('ipg/'):
         with open(os.path.join('ipg/', filename), 'r') as file:
             reader = pd.read_csv(file)
-            row1 = reader[0] 
-            pd.concat([summary_data,row1], ignore_index=True)
-    summary_df = pd.DataFrame(summary_data)
-    summary_df.columns = ['Id',	'Source', 'Nucleotide Accession', 'Start', 'Stop', 'Strand', 'Protein', 'Protein Name','Organism','Strain','Assembly']
-    summary_df.to_csv('ipg_summary.csv', index=False, header=False)
+            row1 = reader.head(1)
+            summary_data = pd.concat([summary_data,row1], ignore_index=True)
+    summary_data.to_csv('ipg_summary.csv', index=False, header=True)
  
 def process_summary_file():
     """
     Process the summary file to extract relevant information.
     """
     summary_df = pd.read_csv('ipg_summary.csv') 
-    accs_protein = summary_df[["Assembly", "Protein"]]
-    accs_protein.columns = ['Accession', 'Protein']
-    accs_protein.to_csv('assm_accs_protein.csv', index=False)
-
-    accs = accs_protein['Accession']
-    accs[accs.str.startswith('GC')].to_csv('assm_accs.csv', index=False)
+    accs_protein = summary_df[["assembly", "protaccver"]]
+    accs = accs_protein['assembly']
+    accs.to_csv('assm_accs.csv', index=False, header=False)
 
 
 def download_genome_data():
@@ -76,7 +71,7 @@ def download_genome_data():
     Download genome data based on the list of assembly accessions.
     """
     PATH_TO_NCBI_DATASETS = '../../ncbi/datasets'
-    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.txt', '--include', 'gff3'])
+    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.csv', '--include', 'gff3'])
 
 def unzip_downloaded_files():
     """
