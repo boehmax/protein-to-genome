@@ -8,25 +8,19 @@ def ipg_xml_to_dataframe(ipg_xml):
     """
     Takes IPG output XML to make a dataframe of the results
     """
+    ipg_record = pd.DataFrame()
     protein_list = ipg_xml['IPGReport']['ProteinList']
-    cds_data = []
     # Iterate over each protein in the protein list
     for protein in protein_list:
-        # Each protein has a CDSList which is a list of StringElement objects
-        # We convert each StringElement to a dictionary and add it to our list
-        for string_element in protein['attriubutes']:
-            # Convert the StringElement to a dictionary
-            dict_element = vars(string_element)
-            # Pop out atributes filed
-            #protein_attributes = dict_element.pop('attributes')
-            # Add the dictionary to our list
-            #cds_data.append(protein_attributes)
-            cds_data.append(dict_element)
+        buffer = protein_list[protein]
+        dict1 = buffer.attributes # getting the attributes of the first protein
+        dict1['protaccver']=dict1.pop('accver')
+        dict2 = buffer['CDSList'][0].attributes # getting the attributes of the first CDS
+        dict2['nucaccver']=dict2.pop('accver')
+        combined_dict = {**dict1, **dict2}
+        ipg_record = ipg_record.append(combined_dict, ignore_index=True)
+    return ipg_record
 
-    # Convert the list of dictionaries to a DataFrame
-    df = pd.DataFrame(cds_data)
-
-    return df
 
 def retrieve_protein_info(filename):
     """
