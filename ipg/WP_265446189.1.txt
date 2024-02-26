@@ -1,2 +1,0 @@
-NZ_JAJUXF010000009.1,52942,54855,-,253314,Acetivibrio straminisolvens,2,Bacteria,FC2,GCF_026155355.1
-NZ_JAKIMH020000129.1,47292,49205,-,253314,Acetivibrio straminisolvens,2,Bacteria,,GCF_022703015.1

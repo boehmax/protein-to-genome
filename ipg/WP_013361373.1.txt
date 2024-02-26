@@ -1,2 +1,0 @@
-NC_014614.1,1316128,1318017,+,1511,Acetoanaerobium sticklandii,2,Bacteria,DSM 519,GCF_000196455.1
-FP565809.1,1316128,1318017,+,1511,Acetoanaerobium sticklandii,2,Bacteria,DSM 519,GCA_000196455.1
