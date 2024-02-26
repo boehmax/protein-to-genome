@@ -19,6 +19,10 @@ def ipg_xml_to_dataframe(ipg_xml):
         dict2 = buffer['CDSList'][0].attributes # getting the attributes of the first CDS
         dict2['nucaccver']=dict2.pop('accver', None)
         combined_dict = {**dict1, **dict2}
+        # Check if data has a 'strain' key
+        if 'strain' not in combined_dict:
+            # If not, add the key with a None value
+            combined_dict['strain'] = None
         combined_df = pd.DataFrame([combined_dict])
         ipg_record = pd.concat([ipg_record, combined_df], ignore_index=True)
     return ipg_record
@@ -37,7 +41,7 @@ def retrieve_protein_info(filename):
             record = Entrez.read(stream)   # Read the response data
             ipg_data_df = ipg_xml_to_dataframe(record)
             with open(output_file, 'w') as ipg_file:
-                ipg_data_df.to_csv(ipg_file, index=False, header=False)  # Write the decoded data to the file
+                ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
 
 
 def create_summary_file():
