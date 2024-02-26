@@ -2,6 +2,7 @@ import subprocess
 import os
 from Bio import Entrez
 import pandas as pd
+import numpy as np
 from io import StringIO
 
 def ipg_xml_to_dataframe(ipg_xml):
@@ -9,16 +10,17 @@ def ipg_xml_to_dataframe(ipg_xml):
     Takes IPG output XML to make a dataframe of the results
     """
     ipg_record = pd.DataFrame()
-    protein_list = ipg_xml['IPGReport']['ProteinList']
+    protein_list = ipg_xml.copy()['IPGReport']['ProteinList']
     # Iterate over each protein in the protein list
-    for protein in protein_list:
-        buffer = protein_list[protein]
+    for index in np.arange(len(protein_list)):
+        buffer = protein_list[index]
         dict1 = buffer.attributes # getting the attributes of the first protein
-        dict1['protaccver']=dict1.pop('accver')
+        dict1['protaccver']=dict1.pop('accver', None)
         dict2 = buffer['CDSList'][0].attributes # getting the attributes of the first CDS
-        dict2['nucaccver']=dict2.pop('accver')
+        dict2['nucaccver']=dict2.pop('accver', None)
         combined_dict = {**dict1, **dict2}
-        ipg_record = ipg_record.append(combined_dict, ignore_index=True)
+        combined_df = pd.DataFrame([combined_dict])
+        ipg_record = pd.concat([ipg_record, combined_df], ignore_index=True)
     return ipg_record
 
 
@@ -31,11 +33,11 @@ def retrieve_protein_info(filename):
             protein_id = line.strip()
             output_file = f'ipg/{protein_id}.csv'
             # Fetch IPG file using Entrez
-            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="text")
+            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
             record = Entrez.read(stream)   # Read the response data
             ipg_data_df = ipg_xml_to_dataframe(record)
             with open(output_file, 'w') as ipg_file:
-                ipg_data_df.to_csv(output_file, index=False, header=False)  # Write the decoded data to the file
+                ipg_data_df.to_csv(ipg_file, index=False, header=False)  # Write the decoded data to the file
 
 
 def create_summary_file():
@@ -45,9 +47,9 @@ def create_summary_file():
     summary_data = []
     for filename in os.listdir('ipg/'):
         with open(os.path.join('ipg/', filename), 'r') as file:
-            reader = pd.read_csv(f)
+            reader = pd.read_csv(file)
             row1 = reader[0] 
-            summary_data.append(row1)
+            pd.concat([summary_data,row1], ignore_index=True)
     summary_df = pd.DataFrame(summary_data)
     summary_df.columns = ['Id',	'Source', 'Nucleotide Accession', 'Start', 'Stop', 'Strand', 'Protein', 'Protein Name','Organism','Strain','Assembly']
     summary_df.to_csv('ipg_summary.csv', index=False, header=False)
