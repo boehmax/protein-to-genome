@@ -1,6 +1,4 @@
 from utils import * 
-import subprocess
-import os
 from Bio import Entrez
 
 
