@@ -1,9 +1,8 @@
-import subprocess
-import os
-from Bio import Entrez
-import pandas as pd
-import numpy as np
-from io import StringIO
+import subprocess # Used in download_genome_data and unzip_downloaded_files functions to run shell commands.
+import os # Used in create_summary_file function to list files in a directory and join paths.
+from Bio import Entrez # Used in retrieve_protein_info function to fetch IPG files using Entrez.
+import pandas as pd #Used throughout your script for data manipulation and analysis (creating DataFrames, reading CSV files, concatenating DataFrames, etc.)
+import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
 
 def ipg_xml_to_dataframe(ipg_xml):
     """
@@ -43,6 +42,32 @@ def retrieve_protein_info(filename):
             with open(output_file, 'w') as ipg_file:
                 ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
 
+
+def generate_protein_alias_ipg():
+    """
+    From the IPG files, generate a file containing the protein alias.
+    """
+    # create a new file for the outpu   t
+    output_file = "output/ipg_representative.txt"
+    alias_df = pd.DataFrame()
+    # loop over all .txt files in the directory
+    for filename in os.listdir('ipg/*.csv'):
+        # read the file into a pandas dataframe
+        df = pd.read_csv(filename)
+
+        # get the name of the first entry
+        first_entry = df['protaccver'][0]
+
+        # get the 'Protein' column and add the first entry as a new column
+        df_output = df['protaccver'].copy()
+        df_output['PIGI'] = first_entry
+
+        # append the output dataframe to the overall dataframe
+        alias_df = pd.concat([alias_df,df_output], ignore_index=True)
+
+    # write the overall dataframe to the output file
+    alias_df.to_csv(output_file, header=True, index=False)
+    
 
 def create_summary_file():
     """

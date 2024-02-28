@@ -1,6 +1,6 @@
 from utils import * 
 from Bio import Entrez
-
+#PIGI = Protein I gave as Input (accession number)
 
 def main():
     # Define the input file containing protein IDs
@@ -12,6 +12,9 @@ def main():
     Entrez.api_key = input("Your API Key: ")
     # Step 1: Retrieve IPG files for each protein ID
     retrieve_protein_info(filename)
+    
+    # Step 2: Generate a file containing the protein alias
+    generate_protein_alias_ipg()
     
     # Step 2: Create a summary file containing the second line of each IPG file
     create_summary_file()
