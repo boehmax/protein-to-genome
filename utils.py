@@ -3,6 +3,9 @@ import os # Used in create_summary_file function to list files in a directory an
 from Bio import Entrez # Used in retrieve_protein_info function to fetch IPG files using Entrez.
 import pandas as pd #Used throughout your script for data manipulation and analysis (creating DataFrames, reading CSV files, concatenating DataFrames, etc.)
 import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
+from io import StringIO
+PATH_TO_NCBI_DATASETS = '../../ncbi/datasets'
+
 
 def ipg_xml_to_dataframe(ipg_xml):
     """
@@ -43,6 +46,47 @@ def retrieve_protein_info(filename):
                 ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
 
 
+def extend_ipg_files_with_assembly_information(directory='ipg'):
+    """
+    Extend IPG files with assembly length information.
+    With NCBI datasets functionality.
+    """
+    for filename in os.listdir(directory):
+        if filename.endswith('.csv'):
+            file_path = os.path.join(directory, filename)
+            df = pd.read_csv(file_path)
+            
+            # Check if 'assembly' column exists
+            if 'assembly' in df.columns:
+                print("Processing file: ", file_path) 
+                for index, row in df.iterrows():
+                    assembly = row['assembly']
+                    # Construct and execute the command
+                    command = f"../../ncbi/datasets summary genome accession {assembly} --as-json-lines | ../../ncbi/dataformat tsv genome --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len"
+                    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    stdout, stderr = process.communicate()
+                    if process.returncode == 0:
+                        # Assuming the output is in TSV format as specified
+                        fields = pd.read_csv(StringIO(stdout), sep='\t')
+                        if len(fields.columns) == 8:
+                            # Update the DataFrame with the new information
+                            df.at[index, 'assembly_accession'] = fields.iloc[0, 0]
+                            df.at[index, 'checkm_completeness'] = fields.iloc[0, 1]
+                            df.at[index, 'checkm_contamination'] = fields.iloc[0, 2]
+                            df.at[index, 'checkm_version'] = fields.iloc[0, 3]
+                            df.at[index, 'contig_N50'] = fields.iloc[0, 4]
+                            df.at[index, 'contig_L50'] = fields.iloc[0, 5]
+                            df.at[index, 'ungaped_seq_len'] = fields.iloc[0, 6]
+                            df.at[index, 'seq_len'] = fields.iloc[0, 7]
+                            print(df)
+                    else:
+                        print(f"Error processing {assembly}: {stderr}")
+                
+                # Write the updated DataFrame back to the file
+                df.to_csv(file_path, index=False)
+            else:
+                print(f"'assembly' column not found in {file_path}")
+
 def generate_protein_alias_ipg():
     """
     From the IPG files, generate a file containing the protein alias.
@@ -50,22 +94,27 @@ def generate_protein_alias_ipg():
     # create a new file for the outpu   t
     output_file = "output/ipg_representative.txt"
     alias_df = pd.DataFrame()
-    # loop over all .txt files in the directory
-    for filename in os.listdir('ipg/*.csv'):
-        # read the file into a pandas dataframe
-        df = pd.read_csv(filename)
+    directory = 'ipg'  # Directory containing the files
 
-        # get the name of the first entry
-        first_entry = df['protaccver'][0]
+    # List all files in the directory and filter for .csv files
+    for filename in os.listdir(directory):
+        if filename.endswith('.csv'):
+            # Construct the full path of the file
+            file_path = os.path.join(directory, filename)
+            # Read the file into a pandas dataframe
+            df = pd.read_csv(file_path)
 
-        # get the 'Protein' column and add the first entry as a new column
-        df_output = df['protaccver'].copy()
-        df_output['PIGI'] = first_entry
+            # Get the name of the first entry
+            first_entry = df['protaccver'][0]
 
-        # append the output dataframe to the overall dataframe
-        alias_df = pd.concat([alias_df,df_output], ignore_index=True)
+            # Create a new DataFrame from 'protaccver' column
+            df_output = pd.DataFrame(df['protaccver'])
+            df_output['PIGI'] = first_entry  # Add the first entry as a new column
 
-    # write the overall dataframe to the output file
+            # Append the output dataframe to the overall dataframe
+            alias_df = pd.concat([alias_df, df_output], ignore_index=True)
+
+    # Write the overall dataframe to the output file
     alias_df.to_csv(output_file, header=True, index=False)
     
 
@@ -75,10 +124,12 @@ def create_summary_file():
     """
     summary_data = pd.DataFrame()
     for filename in os.listdir('ipg/'):
-        with open(os.path.join('ipg/', filename), 'r') as file:
-            reader = pd.read_csv(file)
-            row1 = reader.head(1)
-            summary_data = pd.concat([summary_data,row1], ignore_index=True)
+        if filename.endswith('.csv'):  # Check if the file is a .csv file
+            with open(os.path.join('ipg/', filename), 'r') as file:
+                reader = pd.read_csv(file)
+                if len(reader) > 1:  # Ensure there is at least a second line
+                    row1 = reader.iloc[1:2]  # Get the second line
+                    summary_data = pd.concat([summary_data, row1], ignore_index=True)
     summary_data.to_csv('ipg_summary.csv', index=False, header=True)
  
 def process_summary_file():
