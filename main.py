@@ -6,7 +6,7 @@ def main():
     print("Welcome to the Genome Data Downloader!")
     print("This program will download genome data for a list of protein accessions.")
     print("Please make sure you have the 'datasets' and 'dataformat' command line tool installed from NCBI Datasets.")
-    print("You can find the installation instructions here: https://www.ncbi.nlm.nih.gov/datasets/docs/command-line/"))
+    print("You can find the installation instructions here: https://www.ncbi.nlm.nih.gov/datasets/docs/command-line/")
     print("Please also make sure you have an API key from NCBI. You can get one here: https://www.ncbi.nlm.nih.gov/account/settings/")
     print("\n")
     print("Let's get started!")

@@ -34,6 +34,7 @@ def retrieve_protein_info(filename):
     """
     Retrieve IPG files for each protein ID listed in the input file.
     """
+    print("Retrieving IPG files...")
     with open(filename, 'r') as file:
         for line in file:
             protein_id = line.strip()
@@ -44,6 +45,7 @@ def retrieve_protein_info(filename):
             ipg_data_df = ipg_xml_to_dataframe(record)
             with open(output_file, 'w') as ipg_file:
                 ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
+    print("IPG files retrieved.")
 
 
 def extend_ipg_files_with_assembly_information(directory='ipg'):
@@ -51,6 +53,7 @@ def extend_ipg_files_with_assembly_information(directory='ipg'):
     Extend IPG files with assembly length information.
     With NCBI datasets functionality.
     """
+    print("Extending IPG files with assembly information...")
     for filename in os.listdir(directory):
         if filename.endswith('.csv'):
             file_path = os.path.join(directory, filename)
@@ -78,7 +81,6 @@ def extend_ipg_files_with_assembly_information(directory='ipg'):
                             df.at[index, 'contig_L50'] = fields.iloc[0, 5]
                             df.at[index, 'ungaped_seq_len'] = fields.iloc[0, 6]
                             df.at[index, 'seq_len'] = fields.iloc[0, 7]
-                            print(df)
                     else:
                         print(f"Error processing {assembly}: {stderr}")
                 #Sort the dataframe by source (RefSeq) and checkm completeness, contig N50, contig L50, ungaped sequence length, sequence length
@@ -88,6 +90,7 @@ def extend_ipg_files_with_assembly_information(directory='ipg'):
                 df.to_csv(file_path, index=False)
             else:
                 print(f"'assembly' column not found in {file_path}")
+    print("IPG files extended with assembly information.")
 
 def generate_protein_alias_ipg():
     """
@@ -148,6 +151,7 @@ def download_genome_data():
     """
     Download genome data based on the list of assembly accessions.
     """
+    print("Downloading genome data...")
     PATH_TO_NCBI_DATASETS = '../../ncbi/datasets'
     subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.csv', '--include', 'gff3'])
 
@@ -155,6 +159,7 @@ def unzip_downloaded_files():
     """
     Unzip the downloaded files.
     """
+    print("Extracting downloaded files...")
     subprocess.run(['unzip', 'ncbi_dataset.zip'])
-
+    
 
