@@ -4,7 +4,7 @@ from Bio import Entrez # Used in retrieve_protein_info function to fetch IPG fil
 import pandas as pd #Used throughout your script for data manipulation and analysis (creating DataFrames, reading CSV files, concatenating DataFrames, etc.)
 import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
 from io import StringIO
-PATH_TO_NCBI_DATASETS = '../../ncbi/datasets'
+
 
 
 def ipg_xml_to_dataframe(ipg_xml):
@@ -81,6 +81,8 @@ def extend_ipg_files_with_assembly_information(directory='ipg'):
                             print(df)
                     else:
                         print(f"Error processing {assembly}: {stderr}")
+                #Sort the dataframe by source (RefSeq) and checkm completeness, contig N50, contig L50, ungaped sequence length, sequence length
+                df = df.sort_values(by=['source', 'checkm_completeness', 'contig_N50', 'contig_L50', 'ungaped_seq_len', 'seq_len'], ascending=[False, False, False, True, False, False])
                 
                 # Write the updated DataFrame back to the file
                 df.to_csv(file_path, index=False)
