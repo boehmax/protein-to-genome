@@ -9,23 +9,49 @@ from datetime import datetime
 # Compute the current date once
 current_date = datetime.now().strftime('%Y-%m-%d')
 
-def get_current_date_directory(base_directory='output', subdirectory='ipg', date = current_date):
+def get_current_date_directory(base_directory='output', subdirectory='ipg', date = current_date) -> str:
     """
     Get the current date directory in the format YYYY-MM-DD.
+    
+    Parameters:
+    - base_directory (str): The base directory to store the files.
+    - subdirectory (str): The subdirectory to store the files.
+    - date (str): The current date in the format YYYY-MM-DD.
+    
+    Returns:
+    - directory (str): The full path to the current date
     """
-    current_date = current_date
+    current_date = date
     directory = os.path.join(base_directory, current_date, subdirectory)
     os.makedirs(directory, exist_ok=True)  # Create the directory if it doesn't exist
     return directory
 
 # Function to safely extract attributes from StringElement needed for XML parsing
-def extract_attributes(element):
+def extract_attributes(element)  -> dict:
+    """
+    Safely extract attributes from an XML element.
+
+    Parameters:
+    - element: The XML element.
+
+    Returns:
+    - dict: The attributes of the element.
+    """
     if hasattr(element, 'attributes'):
         return element.attributes
     return {}
 
 # Function to convert the dictionary into a DataFrame needed for XML parsing
-def dict_to_df(data):
+def dict_to_df(data) -> pd.DataFrame:
+    """
+    Convert a dictionary into a DataFrame.
+
+    Parameters:
+    - data (dict): The dictionary to convert.
+
+    Returns:
+    - pd.DataFrame: The resulting DataFrame.
+    """
     ipg_report = data.get('IPGReport', {})
     
     # Extract Product Information
@@ -46,9 +72,12 @@ def dict_to_df(data):
     
     return df
 
-def retrieve_protein_info(filename):
+def retrieve_protein_info(filename) -> None:
     """
     Retrieve IPG files for each protein ID listed in the input file.
+
+    Parameters:
+    - filename (str): The path to the input file containing protein IDs.
     """
     directory = get_current_date_directory()
     print("Retrieving IPG files...")
@@ -68,7 +97,7 @@ def retrieve_protein_info(filename):
     print("IPG files retrieved.")
 
 
-def extend_ipg_files_with_assembly_information():
+def extend_ipg_files_with_assembly_information() -> None:
     """
     Extend IPG files with assembly length information.
     With NCBI datasets functionality.
@@ -149,7 +178,7 @@ def extend_ipg_files_with_assembly_information():
                 print(f"'assembly' column not found in {file_path}")
     print("IPG files extended with assembly information.")
 
-def generate_protein_alias_ipg():
+def generate_protein_alias_ipg() -> None:
     """
     From the IPG files, generate a file containing the protein alias.
     """
@@ -193,7 +222,7 @@ def generate_protein_alias_ipg():
     # Write the overall dataframe to the output file
     alias_df.to_csv(output_file, header=True, index=False)
 
-def create_summary_file():
+def create_summary_file() -> None:
     """
     Create a summary file containing the second line of each IPG file.
     """
@@ -228,7 +257,7 @@ def create_summary_file():
     # Write the overall dataframe to the output file
     summary_data.to_csv(f'{output_directory}/ipg_summary.csv', index=False, header=True)
  
-def process_summary_file():
+def process_summary_file() -> None:
     """
     Process the summary file to extract relevant information.
     """
@@ -236,10 +265,13 @@ def process_summary_file():
     summary_df = pd.read_csv(f'{output_directory}/ipg_summary.csv') 
     accs_protein = summary_df[["assembly", "accver"]]
     accs = accs_protein['assembly']
+    # Replace empty strings with NaN
+    accs = accs.replace('', np.nan)
+    # Drop rows with NaN values to ensure only valid assembly accessions are used
+    accs = accs.dropna()
     accs.to_csv(f'{output_directory}/assm_accs.csv', index=False, header=False)
 
-
-def download_genome_data():
+def download_genome_data() -> None:
     """
     Download genome data based on the list of assembly accessions.
     """
@@ -247,16 +279,19 @@ def download_genome_data():
     output_direcotry = get_current_date_directory(subdirectory='summary')
     os.chdir(output_direcotry)
     print("Downloading genome data...")
-    PATH_TO_NCBI_DATASETS = '~/ncbi/datasets'
+    PATH_TO_NCBI_DATASETS = os.path.expanduser('~/ncbi/datasets')
     subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.csv', '--include', 'gff3'])
     os.chdir(path)
 
-def unzip_downloaded_files():
+def unzip_downloaded_files() -> None:
     """
     Unzip the downloaded files.
     """
+    path = os.getcwd()
     output_directory = get_current_date_directory(subdirectory='summary')
+    os.chdir(output_directory)
     print("Extracting downloaded files...")
-    subprocess.run(['unzip', f'{output_directory}/ncbi_dataset.zip'])
+    subprocess.run(['unzip', 'ncbi_dataset.zip'])
+    os.chdir(path)
     
 

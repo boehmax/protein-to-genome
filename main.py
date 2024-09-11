@@ -1,8 +1,14 @@
 from utils import * 
 from Bio import Entrez
+import argparse
 #PIGI = Protein I gave as Input (accession number)
 
 def main():
+    """
+    Main function to download genome data for a list of protein accessions.
+    It retrieves IPG files, extends them with assembly information, and generates a summary file.
+    After processing the summary file, it downloads genome data for the best genome assembly for each protein.
+    """
     print("Welcome to the Genome Data Downloader!")
     print("This program will download genome data for a list of protein accessions.")
     print("Please make sure you have the 'datasets' and 'dataformat' command line tool installed from NCBI Datasets.")
@@ -11,12 +17,17 @@ def main():
     print("\n")
     print("Let's get started!")
     # Define the input file containing protein IDs
-    filename = input("Give path to your file of protein accessions (default: input/example_proteins.txt): ")
-    if filename == '':
-        # If it is, use a default value
-        filename = 'input/example_proteins.txt'
-    Entrez.email = input("Your Email Adress: ") 
-    Entrez.api_key = input("Your API Key: ")
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Download genome data for protein accessions.")
+    parser.add_argument('-f', '--file', type=str, default='input/example_proteins.txt', help='Path to your file of protein accessions (default: input/example_proteins.txt)')
+    parser.add_argument('-e', '--email', type=str, required=True, help='Your Email Address')
+    parser.add_argument('-k', '--api_key', type=str, required=True, help='Your NCBI API Key')
+    args = parser.parse_args()
+    # Use the parsed arguments
+    filename = args.file
+    Entrez.email = args.email
+    Entrez.api_key = args.api_key
+    
     # Step 1.1: Retrieve IPG files for each protein ID
     retrieve_protein_info(filename)
     
@@ -39,7 +50,7 @@ def main():
     unzip_downloaded_files()
     
     print("Genome data download complete!")
-    print("You can find the downloaded files in the 'ncbi/datasets' directory.")
+    print(f"You can find the downloaded files in the 'output/YYYY-MM-DD/summary/ncbi/datasets' directory.")
     print("Thank you for using the Genome Data Downloader! :)")
 
 if __name__ == "__main__":
