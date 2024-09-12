@@ -5,6 +5,8 @@ import pandas as pd #Used throughout your script for data manipulation and analy
 import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
 from io import StringIO
 from datetime import datetime
+from pandas import json_normalize
+from Bio.Entrez.Parser import DictionaryElement, ListElement, StringElement
 
 # Compute the current date once
 current_date = datetime.now().strftime('%Y-%m-%d')
@@ -41,6 +43,17 @@ def extract_attributes(element)  -> dict:
         return element.attributes
     return {}
 
+
+def merge_dicts_with_suffix(*dicts, suffix="_dup"):
+    merged_dict = {}
+    for d in dicts:
+        for key, value in d.items():
+            new_key = key
+            while new_key in merged_dict:
+                new_key += suffix
+            merged_dict[new_key] = value
+    return merged_dict
+
 # Function to convert the dictionary into a DataFrame needed for XML parsing
 def dict_to_df(data) -> pd.DataFrame:
     """
@@ -61,16 +74,17 @@ def dict_to_df(data) -> pd.DataFrame:
     protein_list = ipg_report.get('ProteinList', [])
     protein_data = []
     for protein in protein_list:
-        protein_attrs = protein.get('attributes', {})
+        protein_attrs = extract_attributes(protein)
         cds_list = protein.get('CDSList', [])
         for cds in cds_list:
-            row = {**product_info, **protein_attrs, **extract_attributes(cds)}
+            row = merge_dicts_with_suffix(product_info, protein_attrs, extract_attributes(cds))
             protein_data.append(row)
     
     # Convert to DataFrame
     df = pd.DataFrame(protein_data)
     
     return df
+    
 
 def retrieve_protein_info(filename) -> None:
     """
@@ -90,7 +104,7 @@ def retrieve_protein_info(filename) -> None:
             record = Entrez.read(stream)   # Read the response data
             ipg_data_df = dict_to_df(record)
             # Add PIGI column
-            ipg_data_df['PIGI'] = protein_id
+            ipg_data_df['PIGI'] = pro tein_id
             print(f"Retrieved IPG data for {protein_id}.")
             with open(output_file, 'w') as ipg_file:
                 ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
@@ -193,6 +207,7 @@ def generate_protein_alias_ipg() -> None:
         if filename.endswith('.csv'):
             # Construct the full path of the file
             file_path = os.path.join(directory, filename)
+            filename_without_extension = os.path.splitext(os.path.basename(file_path))[0]
             
             # Check if the file is empty before reading
             if os.path.getsize(file_path) > 0:
@@ -206,18 +221,16 @@ def generate_protein_alias_ipg() -> None:
                 continue  # Skip to the next file
 
             # Check if 'accver' column exists
-            if 'accver' in df.columns:
-                # Get the name of the first entry
-                first_entry = df['accver'][0]
-
+            if 'accver_dup' in df.columns:
+                
                 # Create a new DataFrame from 'accver' column
-                df_output = pd.DataFrame(df['accver'])
-                df_output['PIGI'] = first_entry  # Add the first entry as a new column
+                df_output = pd.DataFrame(df['accver_dup'])
+                df_output['PIGI'] = filename_without_extension  # Add the name of the file as a column
 
                 # Append the output dataframe to the overall dataframe
                 alias_df = pd.concat([alias_df, df_output], ignore_index=True)
             else:
-                print(f"'accver' column not found in {file_path}")
+                print(f"'accver_dup' column not found in {file_path}")
 
     # Write the overall dataframe to the output file
     alias_df.to_csv(output_file, header=True, index=False)
@@ -248,11 +261,14 @@ def create_summary_file() -> None:
                 continue  # Skip to the next file
 
             # Ensure there is at least a second line
-            if len(reader) > 1:
-                row1 = reader.iloc[1:2]  # Get the second line
+            if len(reader) > 0:
+                row1 = reader.iloc[[0]].copy()  # Select the first row and ensure it's a DataFrame
+                row1.loc[:, 'PIGI'] = filename[:-4]  # Add the PIGI column and fill with file name without .csv  
                 summary_data = pd.concat([summary_data, row1], ignore_index=True)
+                #Add the PIGI column and ill with file name without .csv
+                
             else:
-                print(f"File {file_path} does not have a second line.")
+                print(f"File {file_path} does not have any line.")
 
     # Write the overall dataframe to the output file
     summary_data.to_csv(f'{output_directory}/ipg_summary.csv', index=False, header=True)
@@ -263,12 +279,16 @@ def process_summary_file() -> None:
     """
     output_directory = get_current_date_directory(subdirectory='summary')
     summary_df = pd.read_csv(f'{output_directory}/ipg_summary.csv') 
-    accs_protein = summary_df[["assembly", "accver"]]
+    accs_protein = summary_df[["assembly", "PIGI"]]
     accs = accs_protein['assembly']
     # Replace empty strings with NaN
+    accs_protein = accs_protein.replace('', np.nan)
     accs = accs.replace('', np.nan)
     # Drop rows with NaN values to ensure only valid assembly accessions are used
+    accs_protein = accs_protein.dropna()
     accs = accs.dropna()
+    # Write the assembly accessions to a file
+    accs_protein.to_csv(f'{output_directory}/assm_accs_protein.csv', index=False, header=False)
     accs.to_csv(f'{output_directory}/assm_accs.csv', index=False, header=False)
 
 def download_genome_data() -> None:
