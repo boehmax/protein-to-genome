@@ -5,8 +5,6 @@ import pandas as pd #Used throughout your script for data manipulation and analy
 import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
 from io import StringIO
 from datetime import datetime
-from pandas import json_normalize
-from Bio.Entrez.Parser import DictionaryElement, ListElement, StringElement
 
 # Compute the current date once
 current_date = datetime.now().strftime('%Y-%m-%d')
@@ -104,7 +102,7 @@ def retrieve_protein_info(filename) -> None:
             record = Entrez.read(stream)   # Read the response data
             ipg_data_df = dict_to_df(record)
             # Add PIGI column
-            ipg_data_df['PIGI'] = pro tein_id
+            ipg_data_df['PIGI'] = protein_id
             print(f"Retrieved IPG data for {protein_id}.")
             with open(output_file, 'w') as ipg_file:
                 ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
