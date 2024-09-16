@@ -97,6 +97,10 @@ def retrieve_protein_info(filename) -> None:
         for line in file:
             protein_id = line.strip()
             output_file = f'{directory}/{protein_id}.csv'
+            # Check if the file already exists
+            if os.path.exists(output_file):
+                print(f"File {protein_id}.csv already exists. Skipping...")
+                continue
             # Fetch IPG file using Entrez
             stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
             record = Entrez.read(stream)   # Read the response data
@@ -109,7 +113,7 @@ def retrieve_protein_info(filename) -> None:
     print("IPG files retrieved.")
 
 
-def extend_ipg_files_with_assembly_information() -> None:
+def extend_ipg_files_with_assembly_information(api_key = 0) -> None:
     """
     Extend IPG files with assembly length information.
     With NCBI datasets functionality.
@@ -137,7 +141,7 @@ def extend_ipg_files_with_assembly_information() -> None:
                 for index, row in df.iterrows():
                     assembly = row['assembly']
                     # Construct and execute the command
-                    command = f"~/ncbi/datasets summary genome accession {assembly} --as-json-lines | ~/ncbi/dataformat tsv genome --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
+                    command = f"~/ncbi/datasets summary genome accession {assembly} --api-key {api_key} --as-json-lines | ~/ncbi/dataformat tsv genome --api-key {api_key} --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
                     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     stdout, stderr = process.communicate()
                     if process.returncode == 0:
@@ -289,16 +293,20 @@ def process_summary_file() -> None:
     accs_protein.to_csv(f'{output_directory}/assm_accs_protein.csv', index=False, header=False)
     accs.to_csv(f'{output_directory}/assm_accs.csv', index=False, header=False)
 
-def download_genome_data() -> None:
+def download_genome_data(input_file = 'assm_accs.csv', api_key = 0) -> None:
     """
     Download genome data based on the list of assembly accessions.
+    
+    Parameeters:
+    - input_file (str): The file containing the assembly accessions separated by newlines.
+    - api_key (str): Your API key for NCBI datasets.
     """
     path = os.getcwd()
     output_direcotry = get_current_date_directory(subdirectory='summary')
     os.chdir(output_direcotry)
     print("Downloading genome data...")
     PATH_TO_NCBI_DATASETS = os.path.expanduser('~/ncbi/datasets')
-    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--inputfile', 'assm_accs.csv', '--include', 'gff3'])
+    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--api-key', api_key, '--inputfile', input_file, '--include', 'gff3'])
     os.chdir(path)
 
 def unzip_downloaded_files() -> None:
