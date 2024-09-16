@@ -392,7 +392,7 @@ def process_summary_file() -> None:
     accs_protein.to_csv(f'{output_directory}/assm_accs_protein.csv', index=False, header=False)
     accs.to_csv(f'{output_directory}/assm_accs.csv', index=False, header=False)
 
-def download_genome_data(api_key, input_file = 'assm_accs.csv') -> None:
+def download_genome_data(api_key, input_file='assm_accs.csv', retries=3, delay=5) -> None:
     """
     Download genome data based on the list of assembly accessions.
 
@@ -402,17 +402,32 @@ def download_genome_data(api_key, input_file = 'assm_accs.csv') -> None:
         The file containing the assembly accessions separated by newlines. Default is 'assm_accs.csv'.
     api_key : str
         Your API key for NCBI datasets. Default is 0.
+    retries : int, optional
+        Number of times to retry the download in case of failure. Default is 3.
+    delay : int, optional
+        Number of seconds to wait before retrying. Default is 5.
 
     Returns
     -------
     None
     """
     path = os.getcwd()
-    output_direcotry = get_current_date_directory(subdirectory='summary')
-    os.chdir(output_direcotry)
+    output_directory = get_current_date_directory(subdirectory='summary')
+    os.chdir(output_directory)
     print("Downloading genome data...")
     PATH_TO_NCBI_DATASETS = os.path.expanduser('~/ncbi/datasets')
-    subprocess.run([PATH_TO_NCBI_DATASETS, '--api-key', api_key, 'download', 'genome', 'accession',  '--inputfile', input_file, '--include', 'gff3'])
+
+    for attempt in range(retries):
+        try:
+            subprocess.run([PATH_TO_NCBI_DATASETS, '--api-key', api_key, 'download', 'genome', 'accession', '--inputfile', input_file, '--include', 'gff3'], check=True)
+            print("Download successful.")
+            break
+        except subprocess.CalledProcessError as e:
+            print(f"Download failed: {e}. Retrying in {delay} seconds...")
+            time.sleep(delay)
+    else:
+        print("Download failed after multiple attempts.")
+    
     os.chdir(path)
 
 def unzip_downloaded_files() -> None:
