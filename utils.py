@@ -311,7 +311,7 @@ def generate_protein_alias_ipg() -> None:
                 print(f"'accver_dup' column not found in {file_path}")
 
     # Write the overall dataframe to the output file
-    alias_df.to_csv(output_file, header=True, index=False)
+    alias_df.to_csv(output_file, header=False, index=False, sep='\t')
 
 def create_summary_file() -> None:
     """
