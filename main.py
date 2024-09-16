@@ -32,7 +32,7 @@ def main():
     retrieve_protein_info(filename)
     
     # Step 1.2: Extend IPG files with assembly information and sorts them, so that best assembly is first
-    extend_ipg_files_with_assembly_information()
+    extend_ipg_files_with_assembly_information(api_key=args.api_key)
     
     # Step 1.3: Generate a file containing the protein alias
     generate_protein_alias_ipg()
@@ -44,7 +44,7 @@ def main():
     process_summary_file()
     
     # Step 4: Download genome data based on the list of assembly accessions
-    download_genome_data()
+    download_genome_data(api_key=args.api_key)
     
     # Step 5: Unzip the downloaded files
     unzip_downloaded_files()
