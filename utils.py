@@ -206,7 +206,7 @@ def extend_ipg_files_with_assembly_information(api_key) -> None:
                 for index, row in df.iterrows():
                     assembly = row['assembly']
                     # Construct and execute the command
-                    command = f"~/ncbi/datasets summary genome accession {assembly} --api-key {api_key} --as-json-lines | ~/ncbi/dataformat tsv genome --api-key {api_key} --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
+                    command = f"~/ncbi/datasets summary --api-key {api_key} genome accession {assembly} --as-json-lines | ~/ncbi/dataformat tsv genome --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
                     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     stdout, stderr = process.communicate()
                     if process.returncode == 0:
@@ -412,7 +412,7 @@ def download_genome_data(api_key, input_file = 'assm_accs.csv') -> None:
     os.chdir(output_direcotry)
     print("Downloading genome data...")
     PATH_TO_NCBI_DATASETS = os.path.expanduser('~/ncbi/datasets')
-    subprocess.run([PATH_TO_NCBI_DATASETS, 'download', 'genome', 'accession', '--api-key', api_key, '--inputfile', input_file, '--include', 'gff3'])
+    subprocess.run([PATH_TO_NCBI_DATASETS, '--api-key', api_key, 'download', 'genome', 'accession',  '--inputfile', input_file, '--include', 'gff3'])
     os.chdir(path)
 
 def unzip_downloaded_files() -> None:
