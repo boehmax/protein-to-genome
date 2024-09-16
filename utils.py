@@ -302,8 +302,8 @@ def generate_protein_alias_ipg() -> None:
             if 'accver_dup' in df.columns:
                 
                 # Create a new DataFrame from 'accver' column
+                df_output['PIGI'] = filename_without_extension
                 df_output = pd.DataFrame(df['accver_dup'])
-                df_output['PIGI'] = filename_without_extension  # Add the name of the file as a column
 
                 # Append the output dataframe to the overall dataframe
                 alias_df = pd.concat([alias_df, df_output], ignore_index=True)
