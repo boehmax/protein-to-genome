@@ -95,4 +95,4 @@ This detailed output provides comprehensive information about each protein acces
 Contributions are welcome! Please fork the repository and submit a pull request. Understand that I am primarily a wet lab biochemist and it might take some time, until I can consider your contribution. Thank you!
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
