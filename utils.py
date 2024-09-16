@@ -5,6 +5,8 @@ import pandas as pd #Used throughout your script for data manipulation and analy
 import numpy as np # Used in ipg_xml_to_dataframe function to create a range for iteration.
 from io import StringIO
 from datetime import datetime
+import urllib.request #need for long list of imports
+import time
 
 # Compute the current date once
 current_date = datetime.now().strftime('%Y-%m-%d')
@@ -84,12 +86,15 @@ def dict_to_df(data) -> pd.DataFrame:
     return df
     
 
-def retrieve_protein_info(filename) -> None:
+def retrieve_protein_info(filename, retries=3, delay=5) -> None:
     """
-    Retrieve IPG files for each protein ID listed in the input file.
+    Retrieve IPG files for each protein ID listed in the input file. It fetches the data using Entrez. 
+    Also it will check if the file already exists and skip it if it does. If connections fail, it will retry a few times, specified by the retries parameter.
 
     Parameters:
     - filename (str): The path to the input file containing protein IDs.
+    - retries (int): Number of times to retry fetching data in case of failure.
+    - delay (int): Number of seconds to wait before retrying.
     """
     directory = get_current_date_directory()
     print("Retrieving IPG files...")
@@ -101,15 +106,30 @@ def retrieve_protein_info(filename) -> None:
             if os.path.exists(output_file):
                 print(f"File {protein_id}.csv already exists. Skipping...")
                 continue
-            # Fetch IPG file using Entrez
-            stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
-            record = Entrez.read(stream)   # Read the response data
-            ipg_data_df = dict_to_df(record)
-            # Add PIGI column
-            ipg_data_df['PIGI'] = protein_id
-            print(f"Retrieved IPG data for {protein_id}.")
-            with open(output_file, 'w') as ipg_file:
-                ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
+            
+            attempt = 0
+            while attempt < retries:
+                try:
+                    # Fetch IPG file using Entrez
+                    stream = Entrez.efetch(db="protein", id=protein_id, rettype="ipg", retmode="xml")
+                    record = Entrez.read(stream)   # Read the response data
+                    ipg_data_df = dict_to_df(record)
+                    # Check if the DataFrame is empty
+                    if ipg_data_df.empty:
+                        print(f"No data found for {protein_id}. Skipping...")
+                        break
+                    # Add PIGI column
+                    ipg_data_df['PIGI'] = protein_id
+                    print(f"Retrieved IPG data for {protein_id}.")
+                    with open(output_file, 'w') as ipg_file:
+                        ipg_data_df.to_csv(ipg_file, index=False, header=True)  # Write the decoded data to the file
+                    break  # Exit the retry loop if successful
+                except Exception as e:
+                    print(f"Error retrieving data for {protein_id}: {e}. Retrying in {delay} seconds...")
+                    attempt += 1
+                    time.sleep(delay)
+            else:
+                print(f"Failed to retrieve data for {protein_id} after {retries} attempts. Skipping...")
     print("IPG files retrieved.")
 
 
