@@ -14,14 +14,20 @@ current_date = datetime.now().strftime('%Y-%m-%d')
 def get_current_date_directory(base_directory='output', subdirectory='ipg', date = current_date) -> str:
     """
     Get the current date directory in the format YYYY-MM-DD.
-    
-    Parameters:
-    - base_directory (str): The base directory to store the files.
-    - subdirectory (str): The subdirectory to store the files.
-    - date (str): The current date in the format YYYY-MM-DD.
-    
-    Returns:
-    - directory (str): The full path to the current date
+
+    Parameters
+    ----------
+    base_directory : str, optional
+        The base directory to store the files. Default is 'output'.
+    subdirectory : str, optional
+        The subdirectory to store the files. Default is 'ipg'.
+    date : str
+        The current date in the format YYYY-MM-DD.
+
+    Returns
+    -------
+    str
+        The full path to the current date directory.
     """
     current_date = date
     directory = os.path.join(base_directory, current_date, subdirectory)
@@ -33,11 +39,15 @@ def extract_attributes(element)  -> dict:
     """
     Safely extract attributes from an XML element.
 
-    Parameters:
-    - element: The XML element.
+    Parameters
+    ----------
+    element : xml.etree.ElementTree.Element
+        The XML element from which to extract attributes.
 
-    Returns:
-    - dict: The attributes of the element.
+    Returns
+    -------
+    dict
+        The attributes of the element.
     """
     if hasattr(element, 'attributes'):
         return element.attributes
@@ -45,6 +55,21 @@ def extract_attributes(element)  -> dict:
 
 
 def merge_dicts_with_suffix(*dicts, suffix="_dup"):
+    """
+    Merge multiple dictionaries, appending a suffix to duplicate keys.
+
+    Parameters
+    ----------
+    *dicts : dict
+        Variable number of dictionaries to merge.
+    suffix : str, optional
+        The suffix to append to duplicate keys. Default is '_dup'.
+
+    Returns
+    -------
+    dict
+        A single dictionary with merged key-value pairs, where duplicate keys have the suffix appended.
+    """
     merged_dict = {}
     for d in dicts:
         for key, value in d.items():
@@ -59,11 +84,15 @@ def dict_to_df(data) -> pd.DataFrame:
     """
     Convert a dictionary into a DataFrame.
 
-    Parameters:
-    - data (dict): The dictionary to convert.
+    Parameters
+    ----------
+    data : dict
+        The dictionary to convert.
 
-    Returns:
-    - pd.DataFrame: The resulting DataFrame.
+    Returns
+    -------
+    pd.DataFrame
+        The resulting DataFrame.
     """
     ipg_report = data.get('IPGReport', {})
     
@@ -88,13 +117,21 @@ def dict_to_df(data) -> pd.DataFrame:
 
 def retrieve_protein_info(filename, retries=3, delay=5) -> None:
     """
-    Retrieve IPG files for each protein ID listed in the input file. It fetches the data using Entrez. 
-    Also it will check if the file already exists and skip it if it does. If connections fail, it will retry a few times, specified by the retries parameter.
+    Retrieve IPG files for each protein ID listed in the input file. It fetches the data using Entrez.
+    Also, it will check if the file already exists and skip it if it does. If connections fail, it will retry a few times, specified by the retries parameter.
 
-    Parameters:
-    - filename (str): The path to the input file containing protein IDs.
-    - retries (int): Number of times to retry fetching data in case of failure.
-    - delay (int): Number of seconds to wait before retrying.
+    Parameters
+    ----------
+    filename : str
+        The path to the input file containing protein IDs.
+    retries : int, optional
+        Number of times to retry fetching data in case of failure. Default is 3.
+    delay : int, optional
+        Number of seconds to wait before retrying. Default is 5.
+
+    Returns
+    -------
+    None
     """
     directory = get_current_date_directory()
     print("Retrieving IPG files...")
@@ -133,10 +170,18 @@ def retrieve_protein_info(filename, retries=3, delay=5) -> None:
     print("IPG files retrieved.")
 
 
-def extend_ipg_files_with_assembly_information(api_key = 0) -> None:
+def extend_ipg_files_with_assembly_information(api_key) -> None:
     """
-    Extend IPG files with assembly length information.
-    With NCBI datasets functionality.
+    Extend IPG files with assembly length information using NCBI datasets functionality.
+
+    Parameters
+    ----------
+    api_key : str
+        The API key for accessing NCBI datasets. Default is 0.
+
+    Returns
+    -------
+    None
     """
     directory = get_current_date_directory()
     print("Extending IPG files with assembly information...")
@@ -216,7 +261,18 @@ def extend_ipg_files_with_assembly_information(api_key = 0) -> None:
 
 def generate_protein_alias_ipg() -> None:
     """
-    From the IPG files, generate a file containing the protein alias.
+    Generate a file containing the protein alias from the IPG files.
+
+    This function reads IPG files from the current date directory, extracts the 'accver_dup' column,
+    and generates a summary file containing the protein alias.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
     output_directory = get_current_date_directory(subdirectory='summary')
     # Create a new file for the output
@@ -259,7 +315,18 @@ def generate_protein_alias_ipg() -> None:
 
 def create_summary_file() -> None:
     """
-    Create a summary file containing the second line of each IPG file.
+    Create a summary file containing the first line of each IPG file.
+
+    This function reads IPG files from the current date directory, extracts the first line,
+    and generates a summary file containing the extracted lines.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
     summary_data = pd.DataFrame()
     output_directory = get_current_date_directory(subdirectory='summary')
@@ -298,6 +365,18 @@ def create_summary_file() -> None:
 def process_summary_file() -> None:
     """
     Process the summary file to extract relevant information.
+
+    This function reads the summary file, extracts the 'assembly' and 'PIGI' columns,
+    replaces empty strings with NaN, drops rows with NaN values, and writes the
+    processed data to new CSV files.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
     output_directory = get_current_date_directory(subdirectory='summary')
     summary_df = pd.read_csv(f'{output_directory}/ipg_summary.csv') 
@@ -313,13 +392,20 @@ def process_summary_file() -> None:
     accs_protein.to_csv(f'{output_directory}/assm_accs_protein.csv', index=False, header=False)
     accs.to_csv(f'{output_directory}/assm_accs.csv', index=False, header=False)
 
-def download_genome_data(input_file = 'assm_accs.csv', api_key = 0) -> None:
+def download_genome_data(api_key, input_file = 'assm_accs.csv') -> None:
     """
     Download genome data based on the list of assembly accessions.
-    
-    Parameeters:
-    - input_file (str): The file containing the assembly accessions separated by newlines.
-    - api_key (str): Your API key for NCBI datasets.
+
+    Parameters
+    ----------
+    input_file : str, optional
+        The file containing the assembly accessions separated by newlines. Default is 'assm_accs.csv'.
+    api_key : str
+        Your API key for NCBI datasets. Default is 0.
+
+    Returns
+    -------
+    None
     """
     path = os.getcwd()
     output_direcotry = get_current_date_directory(subdirectory='summary')
@@ -332,6 +418,17 @@ def download_genome_data(input_file = 'assm_accs.csv', api_key = 0) -> None:
 def unzip_downloaded_files() -> None:
     """
     Unzip the downloaded files.
+
+    This function changes the working directory to the specified subdirectory,
+    extracts the contents of 'ncbi_dataset.zip', and then reverts to the original directory.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
     path = os.getcwd()
     output_directory = get_current_date_directory(subdirectory='summary')
