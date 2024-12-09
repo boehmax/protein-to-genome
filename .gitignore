@@ -1,0 +1,26 @@
+# General file types to ignore
+*.pptx
+*.docx
+*.csv
+*.fasta
+*.nw
+*.fa
+*.aln
+*.html
+*.log
+*.svg
+*.png
+*.pdf
+
+# ignroing some R stuff
+__pycache__
+
+# Specific things to ignore
+output/
+input/
+reports/
+
+
+
+
+
