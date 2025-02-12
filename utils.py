@@ -206,7 +206,7 @@ def extend_ipg_files_with_assembly_information(api_key) -> None:
                 for index, row in df.iterrows():
                     assembly = row['assembly']
                     # Construct and execute the command
-                    command = f"~/ncbi/datasets summary --api-key {api_key} genome accession {assembly} --as-json-lines | ~/ncbi/dataformat tsv genome --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
+                    command = f"~/bioinformatics/programs/ncbi/datasets summary --api-key {api_key} genome accession {assembly} --as-json-lines | ~/bioinformatics/programs/ncbi/dataformat tsv genome --fields accession,checkm-completeness,checkm-contamination,checkm-version,assmstats-contig-n50,assmstats-contig-l50,assmstats-total-ungapped-len,assmstats-total-sequence-len,source_database"
                     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     stdout, stderr = process.communicate()
                     if process.returncode == 0:
@@ -302,9 +302,9 @@ def generate_protein_alias_ipg() -> None:
             if 'accver_dup' in df.columns:
                 
                 # Create a new DataFrame from 'accver' column
-                df_output['PIGI'] = filename_without_extension
                 df_output = pd.DataFrame(df['accver_dup'])
-
+                df_output['PIGI'] = filename_without_extension
+                
                 # Append the output dataframe to the overall dataframe
                 alias_df = pd.concat([alias_df, df_output], ignore_index=True)
             else:
@@ -415,7 +415,7 @@ def download_genome_data(api_key, input_file='assm_accs.csv', retries=3, delay=5
     output_directory = get_current_date_directory(subdirectory='summary')
     os.chdir(output_directory)
     print("Downloading genome data...")
-    PATH_TO_NCBI_DATASETS = os.path.expanduser('~/ncbi/datasets')
+    PATH_TO_NCBI_DATASETS = os.path.expanduser('~/bioinformatics/programs/ncbi/datasets')
 
     for attempt in range(retries):
         try:
