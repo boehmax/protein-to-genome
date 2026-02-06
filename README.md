@@ -1,5 +1,7 @@
 # Protein to Genome 
 
+<a href="https://doi.org/10.5281/zenodo.16736767"><img src="https://zenodo.org/badge/761117230.svg" alt="DOI"></a>
+
 This project focuses on connecting proteins to their corresponding genome assembly in a batch fasion. It is designed to assist bioinformatics researchers in understanding the relationship between proteins and their genetic origins.
 
 ## Table of Contents
